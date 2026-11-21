@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ritme Penyelamat — Latihan Ritme CPR</title>
+<meta name="description" content="Latih ritme kompresi dada CPR yang benar: 100–120 kali per menit.">
+<style>
+/* ============================================================
+   CONFIG — CSS custom properties & theme
+   ============================================================ */
+:root {
+  --bg:          #f8f9fa;
+  --surface:     #ffffff;
+  --border:      #dee2e6;
+  --text:        #1a1d20;
+  --muted:       #6c757d;
+  --accent:      #c0392b;        /* red — chest target, warning */
+  --accent-dark: #96281b;
+  --safe:        #1a6e35;        /* BPM zone: OK */
+  --slow:        #7a5c00;        /* BPM zone: too slow */
+  --fast:        #7a2000;        /* BPM zone: too fast */
+  --focus-ring:  2px solid #3b82d4;
+  --radius:      8px;
+  --font:        -apple-system, "Segoe UI", system-ui, Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:          #111314;
+    --surface:     #1e2124;
+    --border:      #2e3236;
+    --text:        #e9ecef;
+    --muted:       #9ba3aa;
+    --accent:      #e74c3c;
+    --accent-dark: #c0392b;
+    --safe:        #3ecf6e;
+    --slow:        #f0c040;
+    --fast:        #f07040;
+  }
+}
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+h1, h2, h3 { line-height: 1.25; }
+button {
+  cursor: pointer;
+  border: none;
+  font-family: var(--font);
+  font-size: 1rem;
+  border-radius: var(--radius);
+  padding: 0.65rem 1.4rem;
+  transition: background 0.15s, transform 0.08s;
+}
+button:focus-visible { outline: var(--focus-ring); outline-offset: 3px; }
+button:active { transform: scale(0.97); }
+a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
+
+/* ============================================================
+   LAYOUT WRAPPER
+   ============================================================ */
+#app {
+  width: 100%;
+  max-width: 600px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ============================================================
+   SCREENS — only one .screen is visible at a time
+   ============================================================ */
+.screen { display: none; flex-direction: column; gap: 1.25rem; }
+.screen.active { display: flex; }
+
+/* ============================================================
+   START SCREEN
+   ============================================================ */
+#screen-start h1 {
+  font-size: clamp(1.6rem, 5vw, 2.2rem);
+  font-weight: 700;
+  color: var(--accent);
+  text-align: center;
+}
+#screen-start .tagline {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+.disclaimer {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+.mode-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+.mode-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+  text-align: left;
+  color: var(--text);
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.mode-card:hover, .mode-card:focus-visible {
+  border-color: var(--accent);
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+.mode-card .mode-name { font-weight: 600; font-size: 1rem; }
+.mode-card .mode-desc { font-size: 0.85rem; color: var(--muted); }
+
+.btn-info {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.9rem;
+  align-self: center;
+}
+.btn-info:hover { background: var(--surface); }
+
+/* ============================================================
+   TRAINER SCREEN
+   ============================================================ */
+#screen-trainer { align-items: center; }
+
+/* Top bar */
+.trainer-top {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.trainer-stats {
+  display: flex;
+  gap: 1.25rem;
+}
+.stat-box { text-align: center; }
+.stat-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+.stat-value { font-size: 1.5rem; font-weight: 700; line-height: 1.1; }
+.trainer-controls { display: flex; gap: 0.5rem; align-items: center; }
+
+.btn-icon {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+  line-height: 1;
+  border-radius: var(--radius);
+}
+.btn-icon:hover { background: var(--border); }
+
+/* Mode label */
+.mode-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: center;
+  padding: 0.3rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+}
+
+/* BPM Gauge */
+.gauge-wrap {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+}
+.gauge-zones {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  height: 32px;
+}
+.gauge-zone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  gap: 3px;
+  padding: 0 4px;
+}
+.gauge-zone-slow  { background: #fef9e7; color: var(--slow); border: 1px solid #f0c040; }
+.gauge-zone-ok    { background: #eafaf1; color: var(--safe); border: 1px solid #3ecf6e; }
+.gauge-zone-fast  { background: #fef5ee; color: var(--fast); border: 1px solid #f07040; }
+@media (prefers-color-scheme: dark) {
+  .gauge-zone-slow  { background: #3a2f00; border-color: #7a5c00; }
+  .gauge-zone-ok    { background: #0d2d1a; border-color: #1a6e35; }
+  .gauge-zone-fast  { background: #2d1000; border-color: #7a2000; }
+}
+.gauge-marker-row {
+  position: relative;
+  height: 10px;
+  margin-top: 4px;
+}
+#gauge-marker {
+  position: absolute;
+  top: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--text);
+  transform: translateX(-50%);
+  transition: left 0.3s ease;
+}
+.gauge-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.bpm-display {
+  text-align: center;
+  margin-top: 0.5rem;
+}
+.bpm-num {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.bpm-unit { font-size: 0.8rem; color: var(--muted); }
+.bpm-zone-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+/* Chest target */
+#chest-target {
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 700;
+  gap: 6px;
+  touch-action: manipulation;
+  user-select: none;
+  border: 4px solid var(--accent-dark);
+  position: relative;
+}
+#chest-target:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 4px;
+}
+#chest-target .chest-icon { font-size: 2.4rem; line-height: 1; }
+#chest-target .chest-hint { font-size: 0.8rem; opacity: 0.85; }
+
+@media (prefers-reduced-motion: no-preference) {
+  #chest-target.pulse {
+    animation: pulse-once 0.15s ease-out;
+  }
+}
+/* Even in reduced-motion, show a size change so visual feedback is present */
+#chest-target.pulse {
+  opacity: 0.75;
+}
+@keyframes pulse-once {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(0.92); }
+  100% { transform: scale(1); }
+}
+
+/* Metronome visual pulse ring */
+#metro-ring {
+  position: absolute;
+  top: -6px; left: -6px; right: -6px; bottom: -6px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  #metro-ring.beat {
+    animation: ring-beat 0.25s ease-out forwards;
+  }
+}
+#metro-ring.beat { border-color: var(--accent); opacity: 0.6; }
+@keyframes ring-beat {
+  0%   { opacity: 0.8; transform: scale(1); }
+  100% { opacity: 0;   transform: scale(1.18); }
+}
+
+/* Warning banner */
+#warning-banner {
+  display: none;
+  background: var(--accent);
+  color: #fff;
+  text-align: center;
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 0.65rem 1rem;
+  border-radius: var(--radius);
+  width: 100%;
+}
+#warning-banner.visible { display: block; }
+
+/* Breath prompt overlay */
+#breath-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  color: #fff;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  z-index: 100;
+  font-size: 1.3rem;
+  font-weight: 700;
+  text-align: center;
+  padding: 2rem;
+}
+#breath-overlay.visible { display: flex; }
+#breath-countdown { font-size: 3rem; font-weight: 800; }
+
+/* Pause overlay */
+#pause-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 90;
+  font-size: 1.4rem;
+  font-weight: 700;
+  gap: 1rem;
+}
+#pause-overlay.visible { display: flex; }
+
+/* ============================================================
+   RESULTS SCREEN
+   ============================================================ */
+#screen-results { align-items: stretch; }
+#screen-results h2 { font-size: 1.5rem; font-weight: 700; text-align: center; }
+.result-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+.result-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.result-card .rc-label { font-size: 0.75rem; color: var(--muted); }
+.result-card .rc-value { font-size: 1.5rem; font-weight: 700; }
+.result-card .rc-unit  { font-size: 0.75rem; color: var(--muted); }
+
+#bpm-chart { width: 100%; border-radius: var(--radius); display: block; }
+
+.history-list {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.history-list h3 { font-size: 0.9rem; padding: 0.65rem 1rem; border-bottom: 1px solid var(--border); }
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--border);
+}
+.history-item:last-child { border-bottom: none; }
+.history-item .hi-date { color: var(--muted); font-size: 0.78rem; }
+.history-item .hi-score { font-weight: 700; }
+.best-badge {
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  align-self: center;
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+}
+.btn-primary:hover { background: var(--accent-dark); }
+
+/* ============================================================
+   INFO SCREEN
+   ============================================================ */
+#screen-info h2 { font-size: 1.4rem; font-weight: 700; }
+.info-step {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+}
+.info-step-num {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--accent);
+  min-width: 1.6rem;
+  flex-shrink: 0;
+  text-align: center;
+  margin-top: 1px;
+}
+.info-step-body strong { font-size: 0.95rem; }
+.info-step-body p { font-size: 0.875rem; color: var(--muted); margin-top: 2px; }
+.btn-back {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.9rem;
+  align-self: flex-start;
+}
+.btn-back:hover { background: var(--border); }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 400px) {
+  #chest-target { width: 200px; height: 200px; }
+  .result-grid { grid-template-columns: 1fr; }
+  .trainer-stats { gap: 0.75rem; }
+  .stat-value { font-size: 1.2rem; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ======================================================
+       START SCREEN
+       ====================================================== -->
+  <section id="screen-start" class="screen active" role="main" aria-label="Layar utama">
+    <h1>❤️ Ritme Penyelamat</h1>
+    <p class="tagline">Latihan ritme kompresi dada CPR — 100–120 kali per menit</p>
+
+    <div class="disclaimer" role="note" aria-label="Pernyataan penting">
+      <strong>Perhatian:</strong> Alat ini hanya untuk melatih ritme, bukan pengganti pelatihan CPR bersertifikat.
+    </div>
+
+    <p style="font-size:0.9rem; color:var(--muted); text-align:center;">Pilih mode latihan:</p>
+
+    <div class="mode-grid" role="list">
+      <button class="mode-card" role="listitem" data-mode="guided" aria-describedby="desc-guided">
+        <span class="mode-name">🎵 Latihan Terpandu</span>
+        <span class="mode-desc" id="desc-guided">Metronom berbunyi sepanjang sesi di 110 BPM. Ikuti irama.</span>
+      </button>
+      <button class="mode-card" role="listitem" data-mode="test" aria-describedby="desc-test">
+        <span class="mode-name">🧪 Uji Ritme</span>
+        <span class="mode-desc" id="desc-test">Metronom berbunyi 10 detik pertama, lalu Anda meneruskan sendiri.</span>
+      </button>
+      <button class="mode-card" role="listitem" data-mode="thirty-two" aria-describedby="desc-thirty-two">
+        <span class="mode-name">🔄 Mode 30:2</span>
+        <span class="mode-desc" id="desc-thirty-two">30 kompresi, lalu jeda napas 5 detik, ulangi. Pola CPR standar.</span>
+      </button>
+    </div>
+
+    <button class="btn-info" id="btn-open-info" aria-label="Pelajari langkah-langkah CPR">
+      ℹ️ Pelajari Langkah CPR
+    </button>
+  </section>
+
+  <!-- ======================================================
+       TRAINER SCREEN
+       ====================================================== -->
+  <section id="screen-trainer" class="screen" role="main" aria-label="Layar latihan">
+    <!-- Top bar: timer, counter, controls -->
+    <div class="trainer-top">
+      <div class="trainer-stats">
+        <div class="stat-box">
+          <div class="stat-label">Waktu</div>
+          <div class="stat-value" id="timer-display" aria-live="polite" aria-atomic="true">2:00</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Kompresi</div>
+          <div class="stat-value" id="count-display" aria-live="polite">0</div>
+        </div>
+      </div>
+      <div class="trainer-controls">
+        <button class="btn-icon" id="btn-mute" aria-label="Bisukan suara" aria-pressed="false">🔊</button>
+        <button class="btn-icon" id="btn-pause" aria-label="Jeda sesi (Esc)" aria-pressed="false">⏸</button>
+        <button class="btn-icon" id="btn-stop" aria-label="Hentikan sesi">⏹</button>
+      </div>
+    </div>
+
+    <div class="mode-label" id="mode-label-display" aria-live="polite">Latihan Terpandu</div>
+
+    <!-- BPM Gauge -->
+    <div class="gauge-wrap" aria-label="Indikator BPM saat ini">
+      <div class="gauge-zones" aria-hidden="true">
+        <div class="gauge-zone gauge-zone-slow">🐢 Lambat</div>
+        <div class="gauge-zone gauge-zone-ok">✅ Pas!</div>
+        <div class="gauge-zone gauge-zone-fast">🐇 Cepat</div>
+      </div>
+      <div class="gauge-marker-row" aria-hidden="true">
+        <div id="gauge-marker"></div>
+      </div>
+      <div class="gauge-labels" aria-hidden="true">
+        <span>60</span><span>100</span><span>120</span><span>160</span>
+      </div>
+      <div class="bpm-display">
+        <span class="bpm-num" id="bpm-num" aria-live="polite" aria-atomic="true">--</span>
+        <span class="bpm-unit"> BPM</span>
+        <div class="bpm-zone-label" id="bpm-zone-label" aria-live="polite">Mulai tekan!</div>
+      </div>
+    </div>
+
+    <!-- Warning -->
+    <div id="warning-banner" role="alert" aria-live="assertive">
+      ⚠️ Jangan berhenti! Terus lakukan kompresi!
+    </div>
+
+    <!-- Chest target button -->
+    <button
+      id="chest-target"
+      aria-label="Tekan dada — tekan atau tekan Spasi"
+      tabindex="0"
+    >
+      <div id="metro-ring"></div>
+      <div class="chest-icon" aria-hidden="true">❤️</div>
+      <div>TEKAN</div>
+      <div class="chest-hint">atau tekan Spasi</div>
+    </button>
+
+  </section>
+
+  <!-- ======================================================
+       RESULTS SCREEN
+       ====================================================== -->
+  <section id="screen-results" class="screen" role="main" aria-label="Hasil sesi">
+    <h2>Hasil Sesi</h2>
+
+    <div class="result-grid">
+      <div class="result-card">
+        <span class="rc-label">Kompresi dalam zona</span>
+        <span class="rc-value" id="res-accuracy">--</span>
+        <span class="rc-unit">% dari total</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Rata-rata BPM</span>
+        <span class="rc-value" id="res-avg-bpm">--</span>
+        <span class="rc-unit">per menit</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Skor konsistensi</span>
+        <span class="rc-value" id="res-consistency">--</span>
+        <span class="rc-unit">/ 100</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Total waktu jeda</span>
+        <span class="rc-value" id="res-pause">--</span>
+        <span class="rc-unit">detik</span>
+      </div>
+    </div>
+
+    <canvas id="bpm-chart" height="140" aria-label="Grafik BPM selama sesi" role="img"></canvas>
+
+    <div class="history-list" aria-label="Riwayat 10 sesi terakhir">
+      <h3>Riwayat Sesi</h3>
+      <div id="history-items"></div>
+    </div>
+
+    <button class="btn-primary" id="btn-restart" aria-label="Kembali ke menu utama">
+      Kembali ke Menu
+    </button>
+  </section>
+
+  <!-- ======================================================
+       INFO SCREEN
+       ====================================================== -->
+  <section id="screen-info" class="screen" role="main" aria-label="Informasi CPR">
+    <button class="btn-back" id="btn-info-back" aria-label="Kembali ke menu">← Kembali</button>
+    <h2>Rantai Keselamatan CPR</h2>
+
+    <div class="disclaimer" role="note">
+      <strong>Perhatian:</strong> Alat ini hanya untuk melatih ritme, bukan pengganti pelatihan CPR bersertifikat.
+    </div>
+
+    <div class="info-step">
+      <div class="info-step-num" aria-hidden="true">1</div>
+      <div class="info-step-body">
+        <strong>Periksa kesadaran</strong>
+        <p>Panggil nama korban dan tepuk bahunya. Jika tidak ada respons, langsung bertindak.</p>
+      </div>
+    </div>
+    <div class="info-step">
+      <div class="info-step-num" aria-hidden="true">2</div>
+      <div class="info-step-body">
+        <strong>Hubungi layanan darurat</strong>
+        <p>Telepon <strong>112</strong> atau <strong>119</strong>. Jika ada orang lain, minta mereka menelepon sementara Anda mulai CPR.</p>
+      </div>
+    </div>
+    <div class="info-step">
+      <div class="info-step-num" aria-hidden="true">3</div>
+      <div class="info-step-body">
+        <strong>Tekan keras dan cepat</strong>
+        <p>Letakkan tumit tangan di <em>tengah dada</em>. Tekan ke bawah <strong>5–6 cm</strong>, 100–120 kali per menit. Lengan lurus, bahu di atas dada.</p>
+      </div>
+    </div>
+    <div class="info-step">
+      <div class="info-step-num" aria-hidden="true">4</div>
+      <div class="info-step-body">
+        <strong>Biarkan dada kembali penuh</strong>
+        <p>Setelah setiap tekanan, angkat sedikit tangan agar dada dapat mengembang sepenuhnya. Jangan bersandar.</p>
+      </div>
+    </div>
+    <div class="info-step">
+      <div class="info-step-num" aria-hidden="true">5</div>
+      <div class="info-step-body">
+        <strong>Gunakan AED jika tersedia</strong>
+        <p>Nyalakan AED dan ikuti petunjuk suara. Lanjutkan CPR segera setelah AED memberikan kejut listrik.</p>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /app -->
+
+<!-- Breath prompt overlay (for 30:2 mode) -->
+<div id="breath-overlay" role="dialog" aria-modal="true" aria-label="Waktu napas buatan">
+  <div>💨 Berikan 2 napas buatan</div>
+  <div id="breath-countdown" aria-live="assertive" aria-atomic="true">5</div>
+  <div style="font-size:0.9rem; opacity:0.8;">Lanjutkan kompresi setelah hitungan habis</div>
+</div>
+
+<!-- Pause overlay -->
+<div id="pause-overlay" role="dialog" aria-modal="true" aria-label="Sesi dijeda">
+  <div>⏸ Sesi Dijeda</div>
+  <button class="btn-primary" id="btn-resume" aria-label="Lanjutkan sesi">Lanjutkan</button>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   CONFIG
+   ============================================================ */
+const CFG = {
+  SESSION_DURATION_S: 120,   // 2 minutes
+  TARGET_BPM_MIN:     100,
+  TARGET_BPM_MAX:     120,
+  METRO_BPM:          110,
+  GAUGE_MIN_BPM:       60,
+  GAUGE_MAX_BPM:      160,
+  TAP_HISTORY:          5,   // last N intervals for rolling BPM
+  PAUSE_THRESHOLD_MS: 2000,  // warn after 2 s inactivity
+  BREATH_PAUSE_S:        5,  // seconds for breath prompt
+  TEST_MODE_GUIDE_S:    10,  // metronome duration in test mode
+  SCHEDULE_AHEAD_S:   0.1,   // Web Audio look-ahead window
+  SCHEDULE_INTERVAL_MS: 25,  // scheduler tick
+};
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const S = {
+  mode:            null,     // 'guided' | 'test' | 'thirty-two'
+  running:         false,
+  paused:          false,
+  muted:           false,
+  sessionStart:    0,
+  sessionEnd:      0,
+  compressionCount: 0,
+  tapTimes:        [],       // performance.now() of each tap
+  intervals:       [],       // ms between consecutive taps
+  bpmHistory:      [],       // {t: elapsed_s, bpm: number}
+  pauseStart:      0,
+  totalPauseMs:    0,
+  lastTapTime:     0,
+  warningActive:   false,
+  timeLeft:        CFG.SESSION_DURATION_S,
+
+  // 30:2 state
+  thirtyCount:     0,
+  inBreath:        false,
+
+  // Metronome
+  nextBeatTime:    0,
+  metroActive:     false,
+  schedulerTimer:  null,
+
+  // Intervals / timers
+  countdownTimer:  null,
+  warningTimer:    null,
+  breathTimer:     null,
+};
+
+/* ============================================================
+   AUDIO / METRONOME  (Web Audio API, look-ahead scheduling)
+   ============================================================ */
+let audioCtx = null;
+
+function ensureAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function scheduleClick(time) {
+  if (S.muted) return;
+  const osc  = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.frequency.value  = 880;
+  gain.gain.setValueAtTime(0.6, time);
+  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
+  osc.start(time);
+  osc.stop(time + 0.08);
+
+  // Trigger visual ring at the right wall-clock moment
+  const delay = (time - audioCtx.currentTime) * 1000;
+  setTimeout(triggerMetroRing, Math.max(0, delay));
+}
+
+function metroScheduler() {
+  if (!S.metroActive || !audioCtx) return;
+  const beatInterval = 60 / CFG.METRO_BPM;
+  const ahead = audioCtx.currentTime + CFG.SCHEDULE_AHEAD_S;
+  while (S.nextBeatTime < ahead) {
+    scheduleClick(S.nextBeatTime);
+    S.nextBeatTime += beatInterval;
+  }
+}
+
+function startMetronome() {
+  ensureAudioCtx();
+  S.metroActive  = true;
+  S.nextBeatTime = audioCtx.currentTime + 0.05;
+  S.schedulerTimer = setInterval(metroScheduler, CFG.SCHEDULE_INTERVAL_MS);
+}
+
+function stopMetronome() {
+  S.metroActive = false;
+  clearInterval(S.schedulerTimer);
+  S.schedulerTimer = null;
+}
+
+function triggerMetroRing() {
+  const r = document.getElementById('metro-ring');
+  r.classList.remove('beat');
+  void r.offsetWidth;
+  r.classList.add('beat');
+  setTimeout(() => r.classList.remove('beat'), 300);
+}
+
+/* ============================================================
+   INPUT  (pointerdown + keyboard)
+   ============================================================ */
+document.getElementById('chest-target').addEventListener('pointerdown', handleTap);
+
+document.addEventListener('keydown', (e) => {
+  if (e.code !== 'Space') return;
+  if (e.repeat) return;                      // ignore key auto-repeat
+  if (!S.running || S.paused || S.inBreath) return;
+  e.preventDefault();
+  handleTap(e);
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Escape') togglePause();
+});
+
+function handleTap(e) {
+  if (!S.running || S.paused || S.inBreath) return;
+
+  const now = performance.now();
+
+  // Vibrate (failing silently)
+  if (navigator.vibrate) navigator.vibrate(30);
+
+  // Visual feedback on the button
+  const btn = document.getElementById('chest-target');
+  btn.classList.remove('pulse');
+  void btn.offsetWidth;
+  btn.classList.add('pulse');
+  setTimeout(() => btn.classList.remove('pulse'), 200);
+
+  // Record tap
+  if (S.lastTapTime > 0) {
+    const interval = now - S.lastTapTime;
+    if (interval < 2500) {                   // ignore huge gaps for interval calc
+      S.intervals.push(interval);
+    }
+  }
+  S.lastTapTime = now;
+  S.tapTimes.push(now);
+  S.compressionCount++;
+  document.getElementById('count-display').textContent = S.compressionCount;
+
+  // Reset inactivity warning
+  resetWarning();
+
+  // 30:2 logic
+  if (S.mode === 'thirty-two') {
+    S.thirtyCount++;
+    if (S.thirtyCount >= 30) {
+      S.thirtyCount = 0;
+      startBreathPrompt();
+    }
+  }
+
+  // Update BPM
+  updateBPM(now);
+}
+
+/* ============================================================
+   BPM CALCULATION
+   ============================================================ */
+function rollingBPM() {
+  const n = Math.min(S.intervals.length, CFG.TAP_HISTORY);
+  if (n < 1) return null;
+  const recent = S.intervals.slice(-n);
+  const avgInterval = recent.reduce((a, b) => a + b, 0) / recent.length;
+  return 60000 / avgInterval;
+}
+
+function updateBPM(nowPerf) {
+  const bpm = rollingBPM();
+  if (bpm === null) return;
+  const elapsed = (nowPerf - S.sessionStart) / 1000;
+  S.bpmHistory.push({ t: elapsed, bpm });
+  renderGauge(bpm);
+}
+
+/* ============================================================
+   FEEDBACK UI
+   ============================================================ */
+function renderGauge(bpm) {
+  const { GAUGE_MIN_BPM: gMin, GAUGE_MAX_BPM: gMax,
+          TARGET_BPM_MIN: tMin, TARGET_BPM_MAX: tMax } = CFG;
+
+  // Clamp bpm to gauge range
+  const clamped = Math.max(gMin, Math.min(gMax, bpm));
+  const pct = ((clamped - gMin) / (gMax - gMin)) * 100;
+
+  document.getElementById('gauge-marker').style.left = pct + '%';
+  document.getElementById('bpm-num').textContent = Math.round(bpm);
+
+  const lbl   = document.getElementById('bpm-zone-label');
+  const numEl = document.getElementById('bpm-num');
+
+  if (bpm < tMin) {
+    lbl.textContent = '🐢 Terlalu lambat — tekan lebih cepat!';
+    lbl.style.color = 'var(--slow)';
+    numEl.style.color = 'var(--slow)';
+  } else if (bpm > tMax) {
+    lbl.textContent = '🐇 Terlalu cepat — sedikit lebih lambat!';
+    lbl.style.color = 'var(--fast)';
+    numEl.style.color = 'var(--fast)';
+  } else {
+    lbl.textContent = '✅ Pas! Pertahankan ritme ini!';
+    lbl.style.color = 'var(--safe)';
+    numEl.style.color = 'var(--safe)';
+  }
+}
+
+/* ============================================================
+   SESSION & MODES
+   ============================================================ */
+function startSession(mode) {
+  S.mode             = mode;
+  S.running          = true;
+  S.paused           = false;
+  S.compressionCount = 0;
+  S.tapTimes         = [];
+  S.intervals        = [];
+  S.bpmHistory       = [];
+  S.totalPauseMs     = 0;
+  S.pauseStart       = 0;
+  S.lastTapTime      = 0;
+  S.warningActive    = false;
+  S.timeLeft         = CFG.SESSION_DURATION_S;
+  S.thirtyCount      = 0;
+  S.inBreath         = false;
+  S.sessionStart     = performance.now();
+
+  // Update mode label
+  const labels = {
+    guided:      'Latihan Terpandu',
+    test:        'Uji Ritme',
+    'thirty-two':'Mode 30:2',
+  };
+  document.getElementById('mode-label-display').textContent = labels[mode];
+
+  // Reset displays
+  document.getElementById('count-display').textContent = '0';
+  document.getElementById('bpm-num').textContent = '--';
+  document.getElementById('bpm-zone-label').textContent = 'Mulai tekan!';
+  document.getElementById('bpm-zone-label').style.color = '';
+  document.getElementById('bpm-num').style.color = '';
+  document.getElementById('gauge-marker').style.left = '50%';
+  updateTimerDisplay();
+  hideWarning();
+  document.getElementById('breath-overlay').classList.remove('visible');
+
+  showScreen('trainer');
+
+  // Start metronome per mode
+  ensureAudioCtx();
+  if (mode === 'guided') {
+    startMetronome();
+  } else if (mode === 'test') {
+    startMetronome();
+    setTimeout(() => { if (S.running) stopMetronome(); }, CFG.TEST_MODE_GUIDE_S * 1000);
+  }
+  // 'thirty-two' has no continuous metronome
+
+  // Countdown timer (1 s tick via requestAnimationFrame)
+  S._lastTickMs = performance.now();
+  scheduleCountdown();
+
+  // Inactivity watcher — first warning possible after 2 s
+  scheduleWarningCheck();
+}
+
+function scheduleCountdown() {
+  S.countdownRaf = requestAnimationFrame(countdownTick);
+}
+
+function countdownTick(ts) {
+  if (!S.running || S.paused) {
+    S.countdownRaf = requestAnimationFrame(countdownTick);
+    return;
+  }
+  const now = performance.now();
+  const delta = now - S._lastTickMs;
+  if (delta >= 1000) {
+    S._lastTickMs += 1000;
+    S.timeLeft--;
+    updateTimerDisplay();
+    if (S.timeLeft <= 0) {
+      endSession();
+      return;
+    }
+  }
+  S.countdownRaf = requestAnimationFrame(countdownTick);
+}
+
+function updateTimerDisplay() {
+  const m = Math.floor(S.timeLeft / 60);
+  const s = S.timeLeft % 60;
+  document.getElementById('timer-display').textContent =
+    m + ':' + String(s).padStart(2, '0');
+}
+
+function scheduleWarningCheck() {
+  S.warningTimer = setTimeout(checkInactivity, CFG.PAUSE_THRESHOLD_MS);
+}
+
+function checkInactivity() {
+  if (!S.running || S.paused || S.inBreath) {
+    scheduleWarningCheck();
+    return;
+  }
+  const elapsed = performance.now() - S.lastTapTime;
+  if (elapsed >= CFG.PAUSE_THRESHOLD_MS && S.lastTapTime > 0) {
+    showWarning();
+  } else {
+    hideWarning();
+  }
+  scheduleWarningCheck();
+}
+
+function showWarning() {
+  if (S.warningActive) return;
+  S.warningActive = true;
+  document.getElementById('warning-banner').classList.add('visible');
+  if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+}
+
+function hideWarning() {
+  S.warningActive = false;
+  document.getElementById('warning-banner').classList.remove('visible');
+}
+
+function resetWarning() {
+  if (S.warningTimer) clearTimeout(S.warningTimer);
+  hideWarning();
+  scheduleWarningCheck();
+}
+
+/* ---- 30:2 Breath prompt ---- */
+function startBreathPrompt() {
+  S.inBreath = true;
+  stopMetronome();
+  const overlay = document.getElementById('breath-overlay');
+  overlay.classList.add('visible');
+  let count = CFG.BREATH_PAUSE_S;
+  document.getElementById('breath-countdown').textContent = count;
+
+  // Pause inactivity warning during breath
+  if (S.warningTimer) clearTimeout(S.warningTimer);
+  hideWarning();
+
+  S.breathTimer = setInterval(() => {
+    count--;
+    document.getElementById('breath-countdown').textContent = count;
+    if (count <= 0) {
+      clearInterval(S.breathTimer);
+      overlay.classList.remove('visible');
+      S.inBreath = false;
+      scheduleWarningCheck();
+    }
+  }, 1000);
+}
+
+/* ---- Pause / Resume ---- */
+function togglePause() {
+  if (!S.running) return;
+  if (S.paused) {
+    S.paused = false;
+    S.pauseStart && (S.totalPauseMs += performance.now() - S.pauseStart);
+    S.pauseStart = 0;
+    document.getElementById('pause-overlay').classList.remove('visible');
+    document.getElementById('btn-pause').setAttribute('aria-pressed', 'false');
+    document.getElementById('btn-pause').textContent = '⏸';
+    if (S.mode === 'guided') startMetronome();
+    scheduleWarningCheck();
+  } else {
+    S.paused    = true;
+    S.pauseStart = performance.now();
+    stopMetronome();
+    if (S.warningTimer) clearTimeout(S.warningTimer);
+    hideWarning();
+    document.getElementById('pause-overlay').classList.add('visible');
+    document.getElementById('btn-pause').setAttribute('aria-pressed', 'true');
+    document.getElementById('btn-pause').textContent = '▶';
+  }
+}
+
+function endSession() {
+  S.running = false;
+  stopMetronome();
+  cancelAnimationFrame(S.countdownRaf);
+  clearTimeout(S.warningTimer);
+  clearInterval(S.breathTimer);
+  document.getElementById('breath-overlay').classList.remove('visible');
+  document.getElementById('pause-overlay').classList.remove('visible');
+  hideWarning();
+
+  const result = computeResults();
+  saveSession(result);
+  renderResults(result);
+  showScreen('results');
+}
+
+/* ============================================================
+   RESULTS & CHART
+   ============================================================ */
+function computeResults() {
+  const total = S.intervals.length;
+  if (total === 0) return { accuracy: 0, avgBpm: 0, consistency: 0, pauseSec: 0 };
+
+  // BPM per interval
+  const bpms = S.intervals.map(iv => 60000 / iv);
+
+  // Accuracy: % in range
+  const inRange = bpms.filter(b => b >= CFG.TARGET_BPM_MIN && b <= CFG.TARGET_BPM_MAX).length;
+  const accuracy = Math.round((inRange / total) * 100);
+
+  // Average BPM
+  const avgBpm = Math.round(bpms.reduce((a, b) => a + b, 0) / bpms.length);
+
+  // Consistency score (100 - normalized std dev)
+  const mean = S.intervals.reduce((a, b) => a + b, 0) / S.intervals.length;
+  const variance = S.intervals.reduce((s, v) => s + (v - mean) ** 2, 0) / S.intervals.length;
+  const stdDev = Math.sqrt(variance);
+  const cv = stdDev / mean;             // coefficient of variation
+  const consistency = Math.round(Math.max(0, Math.min(100, (1 - cv * 2) * 100)));
+
+  // Pause time
+  const pauseSec = Math.round(S.totalPauseMs / 1000);
+
+  return { accuracy, avgBpm, consistency, pauseSec, bpmHistory: S.bpmHistory };
+}
+
+function renderResults(r) {
+  document.getElementById('res-accuracy').textContent    = r.accuracy;
+  document.getElementById('res-avg-bpm').textContent     = r.avgBpm || '--';
+  document.getElementById('res-consistency').textContent = r.consistency;
+  document.getElementById('res-pause').textContent       = r.pauseSec;
+
+  drawBpmChart(r.bpmHistory || []);
+  renderHistory();
+}
+
+function drawBpmChart(history) {
+  const canvas = document.getElementById('bpm-chart');
+  const ctx    = canvas.getContext('2d');
+  const W      = canvas.offsetWidth || 560;
+  const H      = 140;
+  canvas.width  = W;
+  canvas.height = H;
+
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const bgColor     = isDark ? '#1e2124' : '#ffffff';
+  const borderColor = isDark ? '#2e3236' : '#dee2e6';
+  const textColor   = isDark ? '#9ba3aa' : '#6c757d';
+  const lineColor   = isDark ? '#e74c3c' : '#c0392b';
+  const safeColor   = isDark ? '#1a6e35' : '#eafaf1';
+  const safeBorder  = isDark ? '#3ecf6e' : '#3ecf6e';
+
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(0, 0, W, H);
+
+  if (history.length < 2) {
+    ctx.fillStyle = textColor;
+    ctx.font = '14px ' + getComputedStyle(document.body).fontFamily;
+    ctx.textAlign = 'center';
+    ctx.fillText('Data tidak cukup untuk grafik', W / 2, H / 2);
+    return;
+  }
+
+  const pad  = { top: 12, right: 16, bottom: 28, left: 36 };
+  const cW   = W - pad.left - pad.right;
+  const cH   = H - pad.top - pad.bottom;
+
+  const bpmMin = 60, bpmMax = 160;
+  const tMax   = history[history.length - 1].t;
+
+  function xOf(t)   { return pad.left + (t / tMax) * cW; }
+  function yOf(bpm) { return pad.top  + (1 - (bpm - bpmMin) / (bpmMax - bpmMin)) * cH; }
+
+  // Safe zone fill
+  ctx.fillStyle = safeColor;
+  ctx.fillRect(pad.left, yOf(CFG.TARGET_BPM_MAX), cW, yOf(CFG.TARGET_BPM_MIN) - yOf(CFG.TARGET_BPM_MAX));
+
+  // Gridlines for 100 and 120
+  ctx.strokeStyle = safeBorder;
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  [CFG.TARGET_BPM_MIN, CFG.TARGET_BPM_MAX].forEach(b => {
+    const y = yOf(b);
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + cW, y); ctx.stroke();
+    ctx.fillStyle = textColor;
+    ctx.font = '10px ' + getComputedStyle(document.body).fontFamily;
+    ctx.textAlign = 'right';
+    ctx.fillText(b, pad.left - 3, y + 3);
+  });
+  ctx.setLineDash([]);
+
+  // BPM line
+  ctx.strokeStyle = lineColor;
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  history.forEach((pt, i) => {
+    const x = xOf(pt.t);
+    const y = yOf(Math.max(bpmMin, Math.min(bpmMax, pt.bpm)));
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // Axes labels
+  ctx.fillStyle = textColor;
+  ctx.font = '10px ' + getComputedStyle(document.body).fontFamily;
+  ctx.textAlign = 'center';
+  ctx.fillText('0 s', pad.left, H - 6);
+  ctx.fillText(Math.round(tMax) + ' s', pad.left + cW, H - 6);
+
+  // Border
+  ctx.strokeStyle = borderColor;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(pad.left, pad.top, cW, cH);
+}
+
+/* ============================================================
+   STORAGE
+   ============================================================ */
+const STORAGE_KEY = 'ritme-penyelamat-sessions';
+
+function saveSession(result) {
+  let data = loadHistory();
+  const entry = {
+    date:        new Date().toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }),
+    accuracy:    result.accuracy,
+    avgBpm:      result.avgBpm,
+    consistency: result.consistency,
+    score:       Math.round((result.accuracy + result.consistency) / 2),
+  };
+  data.unshift(entry);
+  if (data.length > 10) data = data.slice(0, 10);
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (_) {}
+}
+
+function loadHistory() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (_) {}
+  return [];
+}
+
+function renderHistory() {
+  const data = loadHistory();
+  const container = document.getElementById('history-items');
+  container.innerHTML = '';
+  if (!data.length) {
+    container.innerHTML = '<div class="history-item"><span style="color:var(--muted);font-size:0.85rem">Belum ada sesi tersimpan.</span></div>';
+    return;
+  }
+  const best = Math.max(...data.map(d => d.score));
+  data.forEach((d, i) => {
+    const el = document.createElement('div');
+    el.className = 'history-item';
+    el.setAttribute('role', 'listitem');
+    el.innerHTML = `
+      <span class="hi-date">${d.date}</span>
+      <span>Akurasi <strong>${d.accuracy}%</strong> &bull; ${d.avgBpm} BPM</span>
+      <span class="hi-score">
+        ${d.score}
+        ${d.score === best && i === data.findIndex(x => x.score === best) ? '<span class="best-badge" aria-label="Skor terbaik">Terbaik</span>' : ''}
+      </span>`;
+    container.appendChild(el);
+  });
+}
+
+/* ============================================================
+   INFO SCREEN (pure navigation)
+   ============================================================ */
+document.getElementById('btn-open-info').addEventListener('click', () => showScreen('info'));
+document.getElementById('btn-info-back').addEventListener('click', () => showScreen('start'));
+
+/* ============================================================
+   UTILITIES
+   ============================================================ */
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+/* ---- Wire up mode buttons ---- */
+document.querySelectorAll('[data-mode]').forEach(btn => {
+  btn.addEventListener('click', () => startSession(btn.dataset.mode));
+});
+
+/* ---- Mute ---- */
+document.getElementById('btn-mute').addEventListener('click', () => {
+  S.muted = !S.muted;
+  const btn = document.getElementById('btn-mute');
+  btn.textContent = S.muted ? '🔇' : '🔊';
+  btn.setAttribute('aria-pressed', String(S.muted));
+  btn.setAttribute('aria-label', S.muted ? 'Aktifkan suara' : 'Bisukan suara');
+});
+
+/* ---- Pause button ---- */
+document.getElementById('btn-pause').addEventListener('click', togglePause);
+document.getElementById('btn-resume').addEventListener('click', togglePause);
+
+/* ---- Stop ---- */
+document.getElementById('btn-stop').addEventListener('click', () => {
+  if (S.running) endSession();
+});
+
+/* ---- Restart to menu ---- */
+document.getElementById('btn-restart').addEventListener('click', () => {
+  showScreen('start');
+});
+
+/* ---- Keep gauge-marker at 50% on load ---- */
+document.getElementById('gauge-marker').style.left = '50%';
+</script>
+</body>
+</html>
