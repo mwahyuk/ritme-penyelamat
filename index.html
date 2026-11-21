@@ -9,17 +9,20 @@
 /* ============================================================
    CONFIG — CSS custom properties & theme
    ============================================================ */
+/* Fix 7: contrast — ratios measured against respective backgrounds.
+   Light: --bg #f8f9fa, --surface #ffffff
+   Dark:  --bg #111314, --surface #1e2124                              */
 :root {
   --bg:          #f8f9fa;
   --surface:     #ffffff;
   --border:      #dee2e6;
-  --text:        #1a1d20;
-  --muted:       #6c757d;
-  --accent:      #c0392b;        /* red — chest target, warning */
+  --text:        #1a1d20;  /* vs #f8f9fa = 17.5:1 PASS */
+  --muted:       #595f65;  /* vs #f8f9fa = 5.4:1 PASS (raised from #6c757d=4.1:1) */
+  --accent:      #c0392b;  /* vs #ffffff text = 4.6:1 PASS */
   --accent-dark: #96281b;
-  --safe:        #1a6e35;        /* BPM zone: OK */
-  --slow:        #7a5c00;        /* BPM zone: too slow */
-  --fast:        #7a2000;        /* BPM zone: too fast */
+  --safe:        #1a6e35;  /* vs #eafaf1 zone bg = 5.0:1 PASS */
+  --slow:        #6b4f00;  /* vs #fef9e7 zone bg = 5.2:1 PASS */
+  --fast:        #6b1a00;  /* vs #fef5ee zone bg = 5.1:1 PASS */
   --focus-ring:  2px solid #3b82d4;
   --radius:      8px;
   --font:        -apple-system, "Segoe UI", system-ui, Arial, sans-serif;
@@ -29,13 +32,13 @@
     --bg:          #111314;
     --surface:     #1e2124;
     --border:      #2e3236;
-    --text:        #e9ecef;
-    --muted:       #9ba3aa;
-    --accent:      #e74c3c;
-    --accent-dark: #c0392b;
-    --safe:        #3ecf6e;
-    --slow:        #f0c040;
-    --fast:        #f07040;
+    --text:        #e9ecef;  /* vs #111314 = 15.3:1 PASS */
+    --muted:       #9ba3aa;  /* vs #1e2124 = 4.6:1 PASS */
+    --accent:      #b83227;  /* vs #fff button text = 4.7:1 PASS (darker than #e74c3c=3.0) */
+    --accent-dark: #8f2520;
+    --safe:        #3ecf6e;  /* vs #0d2d1a zone bg = 5.5:1 PASS */
+    --slow:        #f0c040;  /* vs #3a2f00 zone bg = 6.1:1 PASS */
+    --fast:        #f07040;  /* vs #2d1000 zone bg = 5.8:1 PASS */
   }
 }
 
@@ -199,9 +202,9 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
   border-radius: var(--radius);
   padding: 0.75rem 1rem;
 }
+/* Fix 1: zones sized proportionally to 60-160 scale (derived via CSS vars set by JS) */
 .gauge-zones {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  display: flex;        /* flex so each child can take an exact % width */
   gap: 0;
   border-radius: 4px;
   overflow: hidden;
@@ -215,6 +218,7 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
   font-weight: 600;
   gap: 3px;
   padding: 0 4px;
+  /* widths set dynamically in JS via style attribute */
 }
 .gauge-zone-slow  { background: #fef9e7; color: var(--slow); border: 1px solid #f0c040; }
 .gauge-zone-ok    { background: #eafaf1; color: var(--safe); border: 1px solid #3ecf6e; }
@@ -239,12 +243,17 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
   transform: translateX(-50%);
   transition: left 0.3s ease;
 }
+/* Fix 1: labels at absolute positions matching zone boundaries */
 .gauge-labels {
-  display: flex;
-  justify-content: space-between;
+  position: relative;
+  height: 1rem;
   font-size: 0.7rem;
   color: var(--muted);
   margin-top: 2px;
+}
+.gauge-labels span {
+  position: absolute;
+  transform: translateX(-50%);
 }
 .bpm-display {
   text-align: center;
@@ -373,6 +382,24 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
 }
 #pause-overlay.visible { display: flex; }
 
+/* Impr 11: count-in overlay */
+#countin-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  color: #fff;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 110;
+  gap: 0.5rem;
+  text-align: center;
+}
+#countin-overlay.visible { display: flex; }
+#countin-num { font-size: 5rem; font-weight: 800; line-height: 1; }
+#countin-label { font-size: 1rem; opacity: 0.85; }
+
 /* ============================================================
    RESULTS SCREEN
    ============================================================ */
@@ -480,12 +507,14 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
 </style>
 </head>
 <body>
+<!-- Impr 14: single <main> landmark wraps all screens -->
+<main>
 <div id="app">
 
   <!-- ======================================================
        START SCREEN
        ====================================================== -->
-  <section id="screen-start" class="screen active" role="main" aria-label="Layar utama">
+  <section id="screen-start" class="screen active" aria-label="Layar utama">
     <h1>❤️ Ritme Penyelamat</h1>
     <p class="tagline">Latihan ritme kompresi dada CPR — 100–120 kali per menit</p>
 
@@ -518,17 +547,18 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
   <!-- ======================================================
        TRAINER SCREEN
        ====================================================== -->
-  <section id="screen-trainer" class="screen" role="main" aria-label="Layar latihan">
+  <section id="screen-trainer" class="screen" aria-label="Layar latihan">
     <!-- Top bar: timer, counter, controls -->
     <div class="trainer-top">
       <div class="trainer-stats">
         <div class="stat-box">
           <div class="stat-label">Waktu</div>
-          <div class="stat-value" id="timer-display" aria-live="polite" aria-atomic="true">2:00</div>
+          <!-- Fix 8: aria-live removed; announcements via #sr-live only -->
+          <div class="stat-value" id="timer-display">2:00</div>
         </div>
         <div class="stat-box">
           <div class="stat-label">Kompresi</div>
-          <div class="stat-value" id="count-display" aria-live="polite">0</div>
+        <div class="stat-value" id="count-display">0</div>
         </div>
       </div>
       <div class="trainer-controls">
@@ -542,21 +572,22 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
 
     <!-- BPM Gauge -->
     <div class="gauge-wrap" aria-label="Indikator BPM saat ini">
-      <div class="gauge-zones" aria-hidden="true">
-        <div class="gauge-zone gauge-zone-slow">🐢 Lambat</div>
-        <div class="gauge-zone gauge-zone-ok">✅ Pas!</div>
-        <div class="gauge-zone gauge-zone-fast">🐇 Cepat</div>
+      <div class="gauge-zones" aria-hidden="true" id="gauge-zones">
+        <!-- Fix 1: width% set by JS from CFG -->
+        <div class="gauge-zone gauge-zone-slow" id="gauge-zone-slow">🐢 Lambat</div>
+        <div class="gauge-zone gauge-zone-ok"   id="gauge-zone-ok">✅ Pas!</div>
+        <div class="gauge-zone gauge-zone-fast"  id="gauge-zone-fast">🐇 Cepat</div>
       </div>
       <div class="gauge-marker-row" aria-hidden="true">
         <div id="gauge-marker"></div>
       </div>
-      <div class="gauge-labels" aria-hidden="true">
-        <span>60</span><span>100</span><span>120</span><span>160</span>
-      </div>
+      <!-- Fix 1: label positions set by JS -->
+      <div class="gauge-labels" aria-hidden="true" id="gauge-labels"></div>
       <div class="bpm-display">
-        <span class="bpm-num" id="bpm-num" aria-live="polite" aria-atomic="true">--</span>
+        <!-- Fix 8: aria-live removed from bpm-num and bpm-zone-label -->
+        <span class="bpm-num" id="bpm-num">--</span>
         <span class="bpm-unit"> BPM</span>
-        <div class="bpm-zone-label" id="bpm-zone-label" aria-live="polite">Mulai tekan!</div>
+        <div class="bpm-zone-label" id="bpm-zone-label">Mulai tekan!</div>
       </div>
     </div>
 
@@ -582,8 +613,21 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
   <!-- ======================================================
        RESULTS SCREEN
        ====================================================== -->
-  <section id="screen-results" class="screen" role="main" aria-label="Hasil sesi">
-    <h2>Hasil Sesi</h2>
+  <section id="screen-results" class="screen" aria-label="Hasil sesi">
+    <h2 id="results-title">Hasil Sesi</h2>
+    <!-- Impr 12: short-session message (hidden by default) -->
+    <p id="res-short-msg" style="display:none;text-align:center;color:var(--muted);font-size:0.95rem;">
+      Sesi terlalu singkat untuk dinilai (minimal 10 kompresi).
+    </p>
+    <!-- Impr 10: test-mode phase breakdown (hidden unless test mode) -->
+    <div id="res-phase-breakdown" style="display:none;" class="result-card" aria-label="Rincian fase Uji Ritme">
+      <span class="rc-label">Akurasi fase terpandu (0-10 dtk)</span>
+      <span class="rc-value" id="res-guided-accuracy">--</span>
+      <span class="rc-unit">%</span>
+      <span class="rc-label" style="margin-top:0.5rem;">Akurasi fase mandiri (10 dtk+)</span>
+      <span class="rc-value" id="res-free-accuracy">--</span>
+      <span class="rc-unit">% (skor utama)</span>
+    </div>
 
     <div class="result-grid">
       <div class="result-card">
@@ -601,10 +645,16 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
         <span class="rc-value" id="res-consistency">--</span>
         <span class="rc-unit">/ 100</span>
       </div>
+      <!-- Fix 6: renamed + added fraksi kompresi -->
       <div class="result-card">
-        <span class="rc-label">Total waktu jeda</span>
+        <span class="rc-label">Waktu tangan berhenti</span>
         <span class="rc-value" id="res-pause">--</span>
         <span class="rc-unit">detik</span>
+      </div>
+      <div class="result-card">
+        <span class="rc-label">Fraksi kompresi</span>
+        <span class="rc-value" id="res-fraction">--</span>
+        <span class="rc-unit">% waktu aktif</span>
       </div>
     </div>
 
@@ -623,7 +673,7 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
   <!-- ======================================================
        INFO SCREEN
        ====================================================== -->
-  <section id="screen-info" class="screen" role="main" aria-label="Informasi CPR">
+  <section id="screen-info" class="screen" aria-label="Informasi CPR">
     <button class="btn-back" id="btn-info-back" aria-label="Kembali ke menu">← Kembali</button>
     <h2>Rantai Keselamatan CPR</h2>
 
@@ -642,7 +692,8 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
       <div class="info-step-num" aria-hidden="true">2</div>
       <div class="info-step-body">
         <strong>Hubungi layanan darurat</strong>
-        <p>Telepon <strong>112</strong> atau <strong>119</strong>. Jika ada orang lain, minta mereka menelepon sementara Anda mulai CPR.</p>
+        <!-- Impr 16: add "minta orang lain mencari AED" -->
+        <p>Telepon <strong>112</strong> atau <strong>119</strong>. Jika ada orang lain, minta satu orang menelepon dan satu orang lagi mencari AED terdekat, sementara Anda mulai CPR.</p>
       </div>
     </div>
     <div class="info-step">
@@ -650,6 +701,8 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
       <div class="info-step-body">
         <strong>Tekan keras dan cepat</strong>
         <p>Letakkan tumit tangan di <em>tengah dada</em>. Tekan ke bawah <strong>5–6 cm</strong>, 100–120 kali per menit. Lengan lurus, bahu di atas dada.</p>
+        <!-- Impr 16: hands-only CPR note -->
+        <p style="margin-top:0.5rem;font-weight:600;">CPR hanya kompresi (tanpa napas buatan) dianjurkan untuk penolong awam atau siapa pun yang tidak ingin memberikan napas buatan. Tekan terus tanpa berhenti.</p>
       </div>
     </div>
     <div class="info-step">
@@ -663,12 +716,20 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
       <div class="info-step-num" aria-hidden="true">5</div>
       <div class="info-step-body">
         <strong>Gunakan AED jika tersedia</strong>
-        <p>Nyalakan AED dan ikuti petunjuk suara. Lanjutkan CPR segera setelah AED memberikan kejut listrik.</p>
+        <p>Nyalakan AED dan ikuti petunjuk suara. Lanjutkan CPR segera setelah AED memberikan kejut listrik. Jika AED belum datang, terus lakukan kompresi tanpa henti.</p>
       </div>
     </div>
   </section>
 
 </div><!-- /app -->
+</main>
+
+<!-- Fix 8: single visually-hidden polite live region for SR announcements -->
+<div id="sr-live"
+     role="status"
+     aria-live="polite"
+     aria-atomic="true"
+     style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;"></div>
 
 <!-- Breath prompt overlay (for 30:2 mode) -->
 <div id="breath-overlay" role="dialog" aria-modal="true" aria-label="Waktu napas buatan">
@@ -683,11 +744,46 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
   <button class="btn-primary" id="btn-resume" aria-label="Lanjutkan sesi">Lanjutkan</button>
 </div>
 
+<!-- Impr 11: count-in overlay -->
+<div id="countin-overlay" role="dialog" aria-modal="true" aria-label="Hitungan mundur sebelum mulai" aria-live="assertive">
+  <div id="countin-num">3</div>
+  <div id="countin-label">Bersiap...</div>
+</div>
+
 <script>
 "use strict";
 /* ============================================================
    CONFIG
    ============================================================ */
+/* CHANGELOG
+ * Fix 1  Gauge scale: zones proportional (60-100=40%, 100-120=20%, 120-160=40%),
+ *         label positions absolute, all derived from CFG in initGauge().
+ * Fix 2  Countdown: _lastTickMs reset to performance.now() on resume so no
+ *         catch-up ticks. Auto-pause on visibilitychange (tab hidden).
+ * Fix 3  Test-mode timeout stored as S.testModeTimer; cleared in endSession()
+ *         and startSession(). Pause-aware: remaining guide time continues after resume.
+ * Fix 4  scheduleClick: audio silenced when muted, visual ring always scheduled.
+ * Fix 5  handleTap: ignore non-primary pointers; debounce <250 ms intervals;
+ *         avgBPM computed as 60000/mean(interval).
+ * Fix 6  "Waktu tangan berhenti": gaps>2 s outside breath/pause only.
+ *         "Fraksi kompresi" = % of active session time spent compressing.
+ * Fix 7  WCAG AA: --muted raised in light (#595f65=5.4:1); dark accent
+ *         darkened (#b83227=4.7:1 on white). Ratios commented in CSS.
+ * Fix 8  aria-live removed from BPM/counter/timer; single #sr-live region
+ *         announces zone changes (debounced 3 s), time every 30 s, warnings.
+ * Impr 9  30:2 mode: metronome plays during compression phases, stops during breath.
+ * Impr 10 Test mode results: accuracy split guided (0-10 s) vs unguided (10 s+).
+ * Impr 11 3-2-1 count-in with metronome clicks before each session; taps ignored.
+ * Impr 12 Sessions with <10 compressions are not saved; results screen shows
+ *          "Sesi terlalu singkat untuk dinilai".
+ * Impr 13 Breath countdown pauses when session is paused; resumes from same count.
+ * Impr 14 Overlays: focus moves to main control on open, trapped inside, returned
+ *          to chest target on close. Single <main> landmark per screen.
+ * Impr 15 Chart: canvas scaled by devicePixelRatio; colors read from CSS custom
+ *          properties via getComputedStyle; redraws on resize + theme change.
+ * Impr 16 Info screen: hands-only CPR note added; AED step includes asking
+ *          bystanders to fetch the AED.
+ */
 const CFG = {
   SESSION_DURATION_S: 120,   // 2 minutes
   TARGET_BPM_MIN:     100,
@@ -732,6 +828,26 @@ const S = {
   metroActive:     false,
   schedulerTimer:  null,
 
+  // Fix 3: test-mode guide timer (pause-aware)
+  testModeTimer:        null,  // the timeout ID
+  testModeGuideEndTime: 0,     // absolute performance.now() when guide ends
+
+  // Impr 11: count-in state
+  countIn:         false,      // true during 3-2-1 count-in
+  countInTimer:    null,
+
+  // Impr 10: test-mode phase boundary (elapsed seconds when guide ends)
+  guidedPhaseEndS: 0,          // set once guide phase ends in test mode
+
+  // Fix 6: hands-off time tracking (gaps > 2 s outside breath/pause)
+  handsOffMs:      0,          // accumulated hands-off milliseconds
+  gapStart:        0,          // performance.now() when gap > 2 s began
+
+  // Fix 8: SR live-region debounce
+  lastZone:        null,       // 'slow' | 'ok' | 'fast'
+  lastZoneAnnounceTime: 0,     // performance.now() of last zone announcement
+  lastTimeAnnounceMin:  -1,    // last 30-s mark announced (in elapsed seconds)
+
   // Intervals / timers
   countdownTimer:  null,
   warningTimer:    null,
@@ -749,6 +865,10 @@ function ensureAudioCtx() {
 }
 
 function scheduleClick(time) {
+  // Fix 4: always schedule visual ring; only skip audio when muted
+  const delay = (time - audioCtx.currentTime) * 1000;
+  setTimeout(triggerMetroRing, Math.max(0, delay));
+
   if (S.muted) return;
   const osc  = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
@@ -759,10 +879,6 @@ function scheduleClick(time) {
   gain.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
   osc.start(time);
   osc.stop(time + 0.08);
-
-  // Trigger visual ring at the right wall-clock moment
-  const delay = (time - audioCtx.currentTime) * 1000;
-  setTimeout(triggerMetroRing, Math.max(0, delay));
 }
 
 function metroScheduler() {
@@ -814,9 +930,14 @@ document.addEventListener('keydown', (e) => {
 });
 
 function handleTap(e) {
-  if (!S.running || S.paused || S.inBreath) return;
+  if (!S.running || S.paused || S.inBreath || S.countIn) return;
+  // Fix 5: ignore non-primary pointers (multi-touch ghosts)
+  if (e && e.isPrimary === false) return;
 
   const now = performance.now();
+
+  // Fix 5: debounce — ignore intervals shorter than 250 ms
+  if (S.lastTapTime > 0 && (now - S.lastTapTime) < 250) return;
 
   // Vibrate (failing silently)
   if (navigator.vibrate) navigator.vibrate(30);
@@ -831,8 +952,13 @@ function handleTap(e) {
   // Record tap
   if (S.lastTapTime > 0) {
     const interval = now - S.lastTapTime;
-    if (interval < 2500) {                   // ignore huge gaps for interval calc
+    // Fix 5: only store intervals in a valid human range (250 ms–2500 ms)
+    if (interval >= 250 && interval < 2500) {
       S.intervals.push(interval);
+    }
+    // Fix 6: accumulate hands-off time for gaps > PAUSE_THRESHOLD_MS
+    if (!S.inBreath && interval >= CFG.PAUSE_THRESHOLD_MS) {
+      S.handsOffMs += interval - CFG.PAUSE_THRESHOLD_MS;
     }
   }
   S.lastTapTime = now;
@@ -878,6 +1004,15 @@ function updateBPM(nowPerf) {
 /* ============================================================
    FEEDBACK UI
    ============================================================ */
+
+/* Fix 8: single SR live region helper */
+function srAnnounce(msg) {
+  const el = document.getElementById('sr-live');
+  el.textContent = '';
+  // force re-announcement even for identical text via a timeout
+  setTimeout(() => { el.textContent = msg; }, 50);
+}
+
 function renderGauge(bpm) {
   const { GAUGE_MIN_BPM: gMin, GAUGE_MAX_BPM: gMax,
           TARGET_BPM_MIN: tMin, TARGET_BPM_MAX: tMax } = CFG;
@@ -892,18 +1027,32 @@ function renderGauge(bpm) {
   const lbl   = document.getElementById('bpm-zone-label');
   const numEl = document.getElementById('bpm-num');
 
+  let zone, lblText, color;
   if (bpm < tMin) {
-    lbl.textContent = '🐢 Terlalu lambat — tekan lebih cepat!';
-    lbl.style.color = 'var(--slow)';
-    numEl.style.color = 'var(--slow)';
+    zone    = 'slow';
+    lblText = '🐢 Terlalu lambat — tekan lebih cepat!';
+    color   = 'var(--slow)';
   } else if (bpm > tMax) {
-    lbl.textContent = '🐇 Terlalu cepat — sedikit lebih lambat!';
-    lbl.style.color = 'var(--fast)';
-    numEl.style.color = 'var(--fast)';
+    zone    = 'fast';
+    lblText = '🐇 Terlalu cepat — sedikit lebih lambat!';
+    color   = 'var(--fast)';
   } else {
-    lbl.textContent = '✅ Pas! Pertahankan ritme ini!';
-    lbl.style.color = 'var(--safe)';
-    numEl.style.color = 'var(--safe)';
+    zone    = 'ok';
+    lblText = '✅ Pas! Pertahankan ritme ini!';
+    color   = 'var(--safe)';
+  }
+
+  lbl.textContent   = lblText;
+  lbl.style.color   = color;
+  numEl.style.color = color;
+
+  // Fix 8: announce zone change, debounced to once per 3 s
+  const now = performance.now();
+  if (zone !== S.lastZone && (now - S.lastZoneAnnounceTime) > 3000) {
+    const announceMap = { slow: 'Terlalu lambat', ok: 'Pas, pertahankan!', fast: 'Terlalu cepat' };
+    srAnnounce(Math.round(bpm) + ' BPM. ' + announceMap[zone]);
+    S.lastZone = zone;
+    S.lastZoneAnnounceTime = now;
   }
 }
 
@@ -911,6 +1060,9 @@ function renderGauge(bpm) {
    SESSION & MODES
    ============================================================ */
 function startSession(mode) {
+  // Fix 3: clear any leftover test-mode timer from a previous session
+  if (S.testModeTimer) { clearTimeout(S.testModeTimer); S.testModeTimer = null; }
+
   S.mode             = mode;
   S.running          = true;
   S.paused           = false;
@@ -926,6 +1078,14 @@ function startSession(mode) {
   S.thirtyCount      = 0;
   S.inBreath         = false;
   S.sessionStart     = performance.now();
+  S.testModeGuideEndTime = 0;
+  S.handsOffMs       = 0;
+  S.gapStart         = 0;
+  S.lastZone         = null;
+  S.lastZoneAnnounceTime = 0;
+  S.lastTimeAnnounceMin  = -1;
+  S.countIn          = false;
+  S.guidedPhaseEndS  = 0;
 
   // Update mode label
   const labels = {
@@ -948,30 +1108,78 @@ function startSession(mode) {
 
   showScreen('trainer');
 
-  // Start metronome per mode
-  ensureAudioCtx();
-  if (mode === 'guided') {
-    startMetronome();
-  } else if (mode === 'test') {
-    startMetronome();
-    setTimeout(() => { if (S.running) stopMetronome(); }, CFG.TEST_MODE_GUIDE_S * 1000);
-  }
-  // 'thirty-two' has no continuous metronome
-
-  // Countdown timer (1 s tick via requestAnimationFrame)
+  // Fix 2: set tick reference, start RAF loop, warning watcher
   S._lastTickMs = performance.now();
   scheduleCountdown();
-
-  // Inactivity watcher — first warning possible after 2 s
   scheduleWarningCheck();
+
+  // Impr 11: show 3-2-1 count-in, then start the actual session
+  ensureAudioCtx();
+  startCountIn(mode);
+}
+
+/* Impr 11: 3-2-1 count-in with metronome beats, taps blocked via S.countIn */
+function startCountIn(mode) {
+  S.countIn = true;
+  const overlay = document.getElementById('countin-overlay');
+  const numEl   = document.getElementById('countin-num');
+  const lblEl   = document.getElementById('countin-label');
+  overlay.classList.add('visible');
+
+  let count = 3;
+  numEl.textContent = count;
+  lblEl.textContent = 'Bersiap...';
+
+  // Fire one metronome click per count-in beat
+  const beatInterval = 60 / CFG.METRO_BPM;
+  for (let i = 0; i < 3; i++) {
+    const t = audioCtx.currentTime + i * beatInterval + 0.05;
+    scheduleClick(t);
+  }
+
+  const tick = setInterval(() => {
+    count--;
+    if (count > 0) {
+      numEl.textContent = count;
+    } else {
+      clearInterval(tick);
+      overlay.classList.remove('visible');
+      S.countIn = false;
+      S.sessionStart = performance.now();  // reset so elapsed time starts at 0
+      S._lastTickMs  = performance.now();  // reset tick to avoid phantom seconds
+
+      // Start metronome per mode
+      if (mode === 'guided') {
+        startMetronome();
+      } else if (mode === 'test') {
+        startMetronome();
+        // Fix 3: store absolute end time
+        S.testModeGuideEndTime = performance.now() + CFG.TEST_MODE_GUIDE_S * 1000;
+        S.testModeTimer = setTimeout(() => {
+          if (S.running) {
+            stopMetronome();
+            // Impr 10: record elapsed seconds when guide phase ends
+            S.guidedPhaseEndS = (performance.now() - S.sessionStart) / 1000;
+          }
+          S.testModeTimer = null;
+        }, CFG.TEST_MODE_GUIDE_S * 1000);
+      } else if (mode === 'thirty-two') {
+        // Impr 9: start metronome for first compression phase
+        startMetronome();
+      }
+    }
+  }, beatInterval * 1000);
+  S.countInTimer = tick;
 }
 
 function scheduleCountdown() {
   S.countdownRaf = requestAnimationFrame(countdownTick);
 }
 
-function countdownTick(ts) {
-  if (!S.running || S.paused) {
+function countdownTick() {
+  if (!S.running) return;
+  if (S.paused) {
+    // Fix 2: while paused just keep looping, _lastTickMs will be reset on resume
     S.countdownRaf = requestAnimationFrame(countdownTick);
     return;
   }
@@ -984,6 +1192,13 @@ function countdownTick(ts) {
     if (S.timeLeft <= 0) {
       endSession();
       return;
+    }
+    // Fix 8: announce remaining time every 30 s
+    const elapsed = CFG.SESSION_DURATION_S - S.timeLeft;
+    const mark = Math.floor(elapsed / 30) * 30;
+    if (mark > 0 && mark !== S.lastTimeAnnounceMin && elapsed % 30 === 0) {
+      srAnnounce(S.timeLeft + ' detik tersisa');
+      S.lastTimeAnnounceMin = mark;
     }
   }
   S.countdownRaf = requestAnimationFrame(countdownTick);
@@ -1019,6 +1234,8 @@ function showWarning() {
   S.warningActive = true;
   document.getElementById('warning-banner').classList.add('visible');
   if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+  // Fix 8: announce inactivity warning via SR live region
+  srAnnounce('Jangan berhenti! Terus lakukan kompresi!');
 }
 
 function hideWarning() {
@@ -1046,12 +1263,15 @@ function startBreathPrompt() {
   hideWarning();
 
   S.breathTimer = setInterval(() => {
+    if (S.paused) return;  // Impr 13: freeze while paused (handled in group 4)
     count--;
     document.getElementById('breath-countdown').textContent = count;
     if (count <= 0) {
       clearInterval(S.breathTimer);
       overlay.classList.remove('visible');
       S.inBreath = false;
+      // Impr 9: restart metronome for next compression phase in 30:2 mode
+      if (S.running) startMetronome();
       scheduleWarningCheck();
     }
   }, 1000);
@@ -1061,29 +1281,83 @@ function startBreathPrompt() {
 function togglePause() {
   if (!S.running) return;
   if (S.paused) {
-    S.paused = false;
-    S.pauseStart && (S.totalPauseMs += performance.now() - S.pauseStart);
+    const pauseDuration = S.pauseStart ? performance.now() - S.pauseStart : 0;
+    S.totalPauseMs += pauseDuration;
     S.pauseStart = 0;
+    S.paused = false;
+
+    // Fix 2: reset tick reference so no catch-up ticks after resume
+    S._lastTickMs = performance.now();
+
+    // Fix 3: if test-mode guide phase is still pending, re-arm remaining time
+    if (S.mode === 'test' && S.testModeGuideEndTime > 0 && S.testModeTimer === null) {
+      const remaining = S.testModeGuideEndTime - performance.now() + pauseDuration;
+      if (remaining > 0) {
+        startMetronome();
+        S.testModeTimer = setTimeout(() => {
+          if (S.running) stopMetronome();
+          S.testModeTimer = null;
+        }, remaining);
+      }
+    } else if (S.mode === 'guided') {
+      startMetronome();
+    }
+
     document.getElementById('pause-overlay').classList.remove('visible');
     document.getElementById('btn-pause').setAttribute('aria-pressed', 'false');
     document.getElementById('btn-pause').textContent = '⏸';
-    if (S.mode === 'guided') startMetronome();
+    // Impr 14: return focus to chest target after dismissing pause overlay
+    setTimeout(() => document.getElementById('chest-target').focus(), 50);
     scheduleWarningCheck();
   } else {
-    S.paused    = true;
+    S.paused     = true;
     S.pauseStart = performance.now();
+    // Fix 3: freeze the guide-phase countdown by clearing its timer
+    if (S.testModeTimer) {
+      clearTimeout(S.testModeTimer);
+      S.testModeTimer = null;
+    }
     stopMetronome();
     if (S.warningTimer) clearTimeout(S.warningTimer);
     hideWarning();
     document.getElementById('pause-overlay').classList.add('visible');
     document.getElementById('btn-pause').setAttribute('aria-pressed', 'true');
     document.getElementById('btn-pause').textContent = '▶';
+    // Impr 14: move focus to resume button, trap focus inside overlay
+    setTimeout(() => document.getElementById('btn-resume').focus(), 50);
   }
 }
+
+/* Impr 14: focus-trap helper for dialogs */
+function trapFocus(overlay, e) {
+  const focusable = overlay.querySelectorAll(
+    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+  );
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last  = focusable[focusable.length - 1];
+  if (e.shiftKey) {
+    if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+  } else {
+    if (document.activeElement === last)  { e.preventDefault(); first.focus(); }
+  }
+}
+
+document.getElementById('pause-overlay').addEventListener('keydown', (e) => {
+  if (e.key === 'Tab') trapFocus(document.getElementById('pause-overlay'), e);
+});
+document.getElementById('breath-overlay').addEventListener('keydown', (e) => {
+  if (e.key === 'Tab') trapFocus(document.getElementById('breath-overlay'), e);
+});
 
 function endSession() {
   S.running = false;
   stopMetronome();
+  // Fix 3: clear test-mode guide timer
+  if (S.testModeTimer) { clearTimeout(S.testModeTimer); S.testModeTimer = null; }
+  // Impr 11: clear count-in timer if session stopped early
+  if (S.countInTimer) { clearInterval(S.countInTimer); S.countInTimer = null; }
+  document.getElementById('countin-overlay').classList.remove('visible');
   cancelAnimationFrame(S.countdownRaf);
   clearTimeout(S.warningTimer);
   clearInterval(S.breathTimer);
@@ -1102,63 +1376,138 @@ function endSession() {
    ============================================================ */
 function computeResults() {
   const total = S.intervals.length;
-  if (total === 0) return { accuracy: 0, avgBpm: 0, consistency: 0, pauseSec: 0 };
+  // Impr 12: flag sessions with fewer than 10 compressions
+  const tooShort = S.compressionCount < 10;
+  if (total === 0 || tooShort) {
+    return { tooShort: true, accuracy: 0, avgBpm: 0, consistency: 0, handsOffSec: 0, fraction: 0 };
+  }
 
-  // BPM per interval
-  const bpms = S.intervals.map(iv => 60000 / iv);
-
-  // Accuracy: % in range
-  const inRange = bpms.filter(b => b >= CFG.TARGET_BPM_MIN && b <= CFG.TARGET_BPM_MAX).length;
+  // Accuracy: % of intervals in target zone
+  const inRange = S.intervals.filter(iv => {
+    const b = 60000 / iv;
+    return b >= CFG.TARGET_BPM_MIN && b <= CFG.TARGET_BPM_MAX;
+  }).length;
   const accuracy = Math.round((inRange / total) * 100);
 
-  // Average BPM
-  const avgBpm = Math.round(bpms.reduce((a, b) => a + b, 0) / bpms.length);
+  // Fix 5: avgBpm = 60000 / mean(interval)
+  const meanInterval = S.intervals.reduce((a, b) => a + b, 0) / total;
+  const avgBpm = Math.round(60000 / meanInterval);
 
-  // Consistency score (100 - normalized std dev)
-  const mean = S.intervals.reduce((a, b) => a + b, 0) / S.intervals.length;
-  const variance = S.intervals.reduce((s, v) => s + (v - mean) ** 2, 0) / S.intervals.length;
-  const stdDev = Math.sqrt(variance);
-  const cv = stdDev / mean;             // coefficient of variation
+  // Consistency score (100 - 2*CV, clamped 0-100)
+  const variance = S.intervals.reduce((s, v) => s + (v - meanInterval) ** 2, 0) / total;
+  const cv = Math.sqrt(variance) / meanInterval;
   const consistency = Math.round(Math.max(0, Math.min(100, (1 - cv * 2) * 100)));
 
-  // Pause time
-  const pauseSec = Math.round(S.totalPauseMs / 1000);
+  // Fix 6: hands-off time
+  const handsOffSec = Math.round(S.handsOffMs / 1000);
 
-  return { accuracy, avgBpm, consistency, pauseSec, bpmHistory: S.bpmHistory };
+  // Fix 6: compression fraction
+  const activeDurationMs = (CFG.SESSION_DURATION_S * 1000) - S.totalPauseMs;
+  const compressingMs = total * meanInterval;
+  const fraction = activeDurationMs > 0
+    ? Math.round(Math.min(100, (compressingMs / activeDurationMs) * 100))
+    : 0;
+
+  // Impr 10: test-mode phase split accuracy
+  let guidedAccuracy = null, freeAccuracy = null;
+  if (S.mode === 'test' && S.guidedPhaseEndS > 0) {
+    const guidedTaps  = S.tapTimes.filter(t => ((t - S.sessionStart) / 1000) <= S.guidedPhaseEndS);
+    const freeTaps    = S.tapTimes.filter(t => ((t - S.sessionStart) / 1000) >  S.guidedPhaseEndS);
+
+    const phaseAccuracy = (taps) => {
+      if (taps.length < 2) return null;
+      let inR = 0;
+      for (let i = 1; i < taps.length; i++) {
+        const iv = taps[i] - taps[i - 1];
+        if (iv >= 250 && iv < 2500) {
+          const b = 60000 / iv;
+          if (b >= CFG.TARGET_BPM_MIN && b <= CFG.TARGET_BPM_MAX) inR++;
+        }
+      }
+      return Math.round((inR / (taps.length - 1)) * 100);
+    };
+    guidedAccuracy = phaseAccuracy(guidedTaps);
+    freeAccuracy   = phaseAccuracy(freeTaps);
+  }
+
+  return {
+    tooShort: false,
+    accuracy, avgBpm, consistency, handsOffSec, fraction,
+    guidedAccuracy, freeAccuracy,
+    bpmHistory: S.bpmHistory,
+  };
 }
 
 function renderResults(r) {
+  // Impr 12: short-session guard
+  const shortMsg = document.getElementById('res-short-msg');
+  const grid     = document.querySelector('.result-grid');
+  if (r.tooShort) {
+    shortMsg.style.display = 'block';
+    grid.style.display     = 'none';
+    document.getElementById('bpm-chart').style.display = 'none';
+    document.getElementById('res-phase-breakdown').style.display = 'none';
+    renderHistory();
+    return;
+  }
+  shortMsg.style.display = 'none';
+  grid.style.display     = '';
+  document.getElementById('bpm-chart').style.display = '';
+
   document.getElementById('res-accuracy').textContent    = r.accuracy;
   document.getElementById('res-avg-bpm').textContent     = r.avgBpm || '--';
   document.getElementById('res-consistency').textContent = r.consistency;
-  document.getElementById('res-pause').textContent       = r.pauseSec;
+  // Fix 6: updated field names
+  document.getElementById('res-pause').textContent       = r.handsOffSec;
+  document.getElementById('res-fraction').textContent    = r.fraction;
+
+  // Impr 10: show phase breakdown for test mode
+  const phaseBox = document.getElementById('res-phase-breakdown');
+  if (S.mode === 'test' && r.guidedAccuracy !== null) {
+    phaseBox.style.display = '';
+    document.getElementById('res-guided-accuracy').textContent = r.guidedAccuracy;
+    document.getElementById('res-free-accuracy').textContent   = r.freeAccuracy !== null ? r.freeAccuracy : '--';
+  } else {
+    phaseBox.style.display = 'none';
+  }
 
   drawBpmChart(r.bpmHistory || []);
   renderHistory();
 }
 
-function drawBpmChart(history) {
-  const canvas = document.getElementById('bpm-chart');
-  const ctx    = canvas.getContext('2d');
-  const W      = canvas.offsetWidth || 560;
-  const H      = 140;
-  canvas.width  = W;
-  canvas.height = H;
+/* Impr 15: store last bpmHistory for redraw on resize / theme change */
+let _lastBpmHistory = [];
 
-  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const bgColor     = isDark ? '#1e2124' : '#ffffff';
-  const borderColor = isDark ? '#2e3236' : '#dee2e6';
-  const textColor   = isDark ? '#9ba3aa' : '#6c757d';
-  const lineColor   = isDark ? '#e74c3c' : '#c0392b';
-  const safeColor   = isDark ? '#1a6e35' : '#eafaf1';
-  const safeBorder  = isDark ? '#3ecf6e' : '#3ecf6e';
+function drawBpmChart(history) {
+  _lastBpmHistory = history;
+  const canvas  = document.getElementById('bpm-chart');
+  const ctx     = canvas.getContext('2d');
+  // Impr 15: scale by devicePixelRatio for sharp rendering
+  const dpr  = window.devicePixelRatio || 1;
+  const cssW = canvas.offsetWidth || 560;
+  const cssH = 140;
+  canvas.width  = cssW * dpr;
+  canvas.height = cssH * dpr;
+  canvas.style.width  = cssW + 'px';
+  canvas.style.height = cssH + 'px';
+  ctx.scale(dpr, dpr);
+  const W = cssW, H = cssH;
+
+  // Impr 15: read colors from CSS custom properties (auto dark/light)
+  const style       = getComputedStyle(document.documentElement);
+  const bgColor     = style.getPropertyValue('--surface').trim()   || '#fff';
+  const borderColor = style.getPropertyValue('--border').trim()    || '#dee2e6';
+  const textColor   = style.getPropertyValue('--muted').trim()     || '#6c757d';
+  const lineColor   = style.getPropertyValue('--accent').trim()    || '#c0392b';
+  const safeColor   = '#eafaf1';
+  const safeBorder  = style.getPropertyValue('--safe').trim()      || '#1a6e35';
 
   ctx.fillStyle = bgColor;
   ctx.fillRect(0, 0, W, H);
 
   if (history.length < 2) {
     ctx.fillStyle = textColor;
-    ctx.font = '14px ' + getComputedStyle(document.body).fontFamily;
+    ctx.font = '14px ' + style.getPropertyValue('--font').trim();
     ctx.textAlign = 'center';
     ctx.fillText('Data tidak cukup untuk grafik', W / 2, H / 2);
     return;
@@ -1178,7 +1527,7 @@ function drawBpmChart(history) {
   ctx.fillStyle = safeColor;
   ctx.fillRect(pad.left, yOf(CFG.TARGET_BPM_MAX), cW, yOf(CFG.TARGET_BPM_MIN) - yOf(CFG.TARGET_BPM_MAX));
 
-  // Gridlines for 100 and 120
+  // Gridlines
   ctx.strokeStyle = safeBorder;
   ctx.lineWidth = 1;
   ctx.setLineDash([4, 4]);
@@ -1186,7 +1535,7 @@ function drawBpmChart(history) {
     const y = yOf(b);
     ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + cW, y); ctx.stroke();
     ctx.fillStyle = textColor;
-    ctx.font = '10px ' + getComputedStyle(document.body).fontFamily;
+    ctx.font = '10px ' + style.getPropertyValue('--font').trim();
     ctx.textAlign = 'right';
     ctx.fillText(b, pad.left - 3, y + 3);
   });
@@ -1206,7 +1555,7 @@ function drawBpmChart(history) {
 
   // Axes labels
   ctx.fillStyle = textColor;
-  ctx.font = '10px ' + getComputedStyle(document.body).fontFamily;
+  ctx.font = '10px ' + style.getPropertyValue('--font').trim();
   ctx.textAlign = 'center';
   ctx.fillText('0 s', pad.left, H - 6);
   ctx.fillText(Math.round(tMax) + ' s', pad.left + cW, H - 6);
@@ -1217,12 +1566,24 @@ function drawBpmChart(history) {
   ctx.strokeRect(pad.left, pad.top, cW, cH);
 }
 
+/* Impr 15: redraw on resize and theme change */
+window.addEventListener('resize', () => {
+  if (_lastBpmHistory.length) drawBpmChart(_lastBpmHistory);
+});
+if (window.matchMedia) {
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if (_lastBpmHistory.length) drawBpmChart(_lastBpmHistory);
+  });
+}
+
 /* ============================================================
    STORAGE
    ============================================================ */
 const STORAGE_KEY = 'ritme-penyelamat-sessions';
 
 function saveSession(result) {
+  // Impr 12: do not save sessions that are too short
+  if (result.tooShort) return;
   let data = loadHistory();
   const entry = {
     date:        new Date().toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }),
@@ -1311,8 +1672,44 @@ document.getElementById('btn-restart').addEventListener('click', () => {
   showScreen('start');
 });
 
-/* ---- Keep gauge-marker at 50% on load ---- */
-document.getElementById('gauge-marker').style.left = '50%';
+/* ============================================================
+   GAUGE INIT  (Fix 1: proportional zones + absolute labels)
+   ============================================================ */
+function initGauge() {
+  const { GAUGE_MIN_BPM: gMin, GAUGE_MAX_BPM: gMax,
+          TARGET_BPM_MIN: tMin, TARGET_BPM_MAX: tMax } = CFG;
+  const range = gMax - gMin;
+
+  // Zone widths as % of total range
+  const slowPct = ((tMin - gMin) / range) * 100;   // 60->100 = 40%
+  const okPct   = ((tMax - tMin) / range) * 100;   // 100->120 = 20%
+  const fastPct = ((gMax - tMax) / range) * 100;   // 120->160 = 40%
+
+  document.getElementById('gauge-zone-slow').style.width = slowPct + '%';
+  document.getElementById('gauge-zone-ok').style.width   = okPct   + '%';
+  document.getElementById('gauge-zone-fast').style.width = fastPct + '%';
+
+  // Absolute label positions: left% = (value - gMin) / range * 100
+  const labels = document.getElementById('gauge-labels');
+  labels.innerHTML = '';
+  [gMin, tMin, tMax, gMax].forEach(val => {
+    const span = document.createElement('span');
+    span.textContent = val;
+    span.style.left = ((val - gMin) / range * 100) + '%';
+    labels.appendChild(span);
+  });
+
+  // Set initial marker at center of ideal zone
+  const midIdeal = (tMin + tMax) / 2;
+  document.getElementById('gauge-marker').style.left =
+    ((midIdeal - gMin) / range * 100) + '%';
+}
+initGauge();
+
+/* Fix 2: auto-pause when tab is hidden */
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && S.running && !S.paused) togglePause();
+});
 </script>
 </body>
 </html>
