@@ -13,32 +13,34 @@
    Light: --bg #f8f9fa, --surface #ffffff
    Dark:  --bg #111314, --surface #1e2124                              */
 :root {
-  --bg:          #f8f9fa;
-  --surface:     #ffffff;
-  --border:      #dee2e6;
-  --text:        #1a1d20;  /* vs #f8f9fa = 17.5:1 PASS */
-  --muted:       #595f65;  /* vs #f8f9fa = 5.4:1 PASS (raised from #6c757d=4.1:1) */
-  --accent:      #c0392b;  /* vs #ffffff text = 4.6:1 PASS */
-  --accent-dark: #96281b;
-  --safe:        #1a6e35;  /* vs #eafaf1 zone bg = 5.0:1 PASS */
-  --slow:        #6b4f00;  /* vs #fef9e7 zone bg = 5.2:1 PASS */
-  --fast:        #6b1a00;  /* vs #fef5ee zone bg = 5.1:1 PASS */
-  --focus-ring:  2px solid #3b82d4;
-  --radius:      8px;
-  --font:        -apple-system, "Segoe UI", system-ui, Arial, sans-serif;
+  --bg:               #f8f9fa;
+  --surface:          #ffffff;
+  --border:           #dee2e6;
+  --text:             #1a1d20;  /* vs #f8f9fa = 17.5:1 PASS */
+  --muted:            #595f65;  /* vs #f8f9fa = 5.4:1 PASS */
+  --accent:           #c0392b;  /* vs #ffffff text = 4.6:1 PASS */
+  --accent-dark:      #96281b;
+  --safe:             #1a6e35;  /* vs #eafaf1 zone bg = 5.0:1 PASS */
+  --slow:             #6b4f00;  /* vs #fef9e7 zone bg = 5.2:1 PASS */
+  --fast:             #6b1a00;  /* vs #fef5ee zone bg = 5.1:1 PASS */
+  --chart-safe-fill:  #eafaf1;  /* fix 6: safe-zone chart fill, light */
+  --focus-ring:       2px solid #3b82d4;
+  --radius:           8px;
+  --font:             -apple-system, "Segoe UI", system-ui, Arial, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg:          #111314;
-    --surface:     #1e2124;
-    --border:      #2e3236;
-    --text:        #e9ecef;  /* vs #111314 = 15.3:1 PASS */
-    --muted:       #9ba3aa;  /* vs #1e2124 = 4.6:1 PASS */
-    --accent:      #b83227;  /* vs #fff button text = 4.7:1 PASS (darker than #e74c3c=3.0) */
-    --accent-dark: #8f2520;
-    --safe:        #3ecf6e;  /* vs #0d2d1a zone bg = 5.5:1 PASS */
-    --slow:        #f0c040;  /* vs #3a2f00 zone bg = 6.1:1 PASS */
-    --fast:        #f07040;  /* vs #2d1000 zone bg = 5.8:1 PASS */
+    --bg:               #111314;
+    --surface:          #1e2124;
+    --border:           #2e3236;
+    --text:             #e9ecef;  /* vs #111314 = 15.3:1 PASS */
+    --muted:            #9ba3aa;  /* vs #1e2124 = 4.6:1 PASS */
+    --accent:           #b83227;  /* vs #fff button text = 4.7:1 PASS */
+    --accent-dark:      #8f2520;
+    --safe:             #3ecf6e;  /* vs #0d2d1a zone bg = 5.5:1 PASS */
+    --slow:             #f0c040;  /* vs #3a2f00 zone bg = 6.1:1 PASS */
+    --fast:             #f07040;  /* vs #2d1000 zone bg = 5.8:1 PASS */
+    --chart-safe-fill:  #0d2d1a;  /* fix 6: safe-zone chart fill, dark */
   }
 }
 
@@ -375,7 +377,7 @@ a:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  z-index: 90;
+  z-index: 120;  /* fix 1: above breath (100) and count-in (110) */
   font-size: 1.4rem;
   font-weight: 700;
   gap: 1rem;
@@ -956,9 +958,13 @@ function handleTap(e) {
     if (interval >= 250 && interval < 2500) {
       S.intervals.push(interval);
     }
-    // Fix 6: accumulate hands-off time for gaps > PAUSE_THRESHOLD_MS
-    if (!S.inBreath && interval >= CFG.PAUSE_THRESHOLD_MS) {
-      S.handsOffMs += interval - CFG.PAUSE_THRESHOLD_MS;
+    // fix 3: subtract breath/pause dead time before adding to handsOffMs
+    const deadMs = (S._lastBreathMs || 0) + (S._lastPauseMs || 0);
+    S._lastBreathMs = 0;
+    S._lastPauseMs  = 0;
+    const cleanGap = interval - deadMs;
+    if (cleanGap >= CFG.PAUSE_THRESHOLD_MS) {
+      S.handsOffMs += cleanGap - CFG.PAUSE_THRESHOLD_MS;
     }
   }
   S.lastTapTime = now;
@@ -1086,6 +1092,9 @@ function startSession(mode) {
   S.lastTimeAnnounceMin  = -1;
   S.countIn          = false;
   S.guidedPhaseEndS  = 0;
+  S._lastBreathMs    = 0;  // fix 3
+  S._lastPauseMs     = 0;  // fix 3
+  S._breathStart     = 0;  // fix 3
 
   // Update mode label
   const labels = {
@@ -1108,12 +1117,7 @@ function startSession(mode) {
 
   showScreen('trainer');
 
-  // Fix 2: set tick reference, start RAF loop, warning watcher
-  S._lastTickMs = performance.now();
-  scheduleCountdown();
-  scheduleWarningCheck();
-
-  // Impr 11: show 3-2-1 count-in, then start the actual session
+  // fix 7: countdown loop starts only after count-in finishes (inside startCountIn)
   ensureAudioCtx();
   startCountIn(mode);
 }
@@ -1145,8 +1149,11 @@ function startCountIn(mode) {
       clearInterval(tick);
       overlay.classList.remove('visible');
       S.countIn = false;
-      S.sessionStart = performance.now();  // reset so elapsed time starts at 0
-      S._lastTickMs  = performance.now();  // reset tick to avoid phantom seconds
+      S.sessionStart = performance.now();
+      // fix 7: start countdown loop and warning watcher here, after count-in
+      S._lastTickMs = performance.now();
+      scheduleCountdown();
+      scheduleWarningCheck();
 
       // Start metronome per mode
       if (mode === 'guided') {
@@ -1252,6 +1259,7 @@ function resetWarning() {
 /* ---- 30:2 Breath prompt ---- */
 function startBreathPrompt() {
   S.inBreath = true;
+  S._breathStart = performance.now();  // fix 3: record breath start time
   stopMetronome();
   const overlay = document.getElementById('breath-overlay');
   overlay.classList.add('visible');
@@ -1263,13 +1271,15 @@ function startBreathPrompt() {
   hideWarning();
 
   S.breathTimer = setInterval(() => {
-    if (S.paused) return;  // Impr 13: freeze while paused (handled in group 4)
+    if (S.paused) return;  // Impr 13: freeze while paused
     count--;
     document.getElementById('breath-countdown').textContent = count;
     if (count <= 0) {
       clearInterval(S.breathTimer);
       overlay.classList.remove('visible');
       S.inBreath = false;
+      // fix 3: record actual breath duration for the next tap's handsOff calc
+      S._lastBreathMs = (S._lastBreathMs || 0) + (performance.now() - S._breathStart);
       // Impr 9: restart metronome for next compression phase in 30:2 mode
       if (S.running) startMetronome();
       scheduleWarningCheck();
@@ -1283,24 +1293,36 @@ function togglePause() {
   if (S.paused) {
     const pauseDuration = S.pauseStart ? performance.now() - S.pauseStart : 0;
     S.totalPauseMs += pauseDuration;
+    S._lastPauseMs = (S._lastPauseMs || 0) + pauseDuration;  // fix 3: track for handsOff
     S.pauseStart = 0;
     S.paused = false;
 
     // Fix 2: reset tick reference so no catch-up ticks after resume
     S._lastTickMs = performance.now();
 
-    // Fix 3: if test-mode guide phase is still pending, re-arm remaining time
+    // Fix 3/5: if test-mode guide phase is still pending, re-arm remaining time
     if (S.mode === 'test' && S.testModeGuideEndTime > 0 && S.testModeTimer === null) {
-      const remaining = S.testModeGuideEndTime - performance.now() + pauseDuration;
+      const newEndTime = performance.now() + (S.testModeGuideEndTime - S.pauseStart - pauseDuration);
+      // fix 5: update testModeGuideEndTime to the new wall-clock end
+      S.testModeGuideEndTime = performance.now() + Math.max(0,
+        S.testModeGuideEndTime - (S.pauseStart + pauseDuration));
+      const remaining = S.testModeGuideEndTime - performance.now();
       if (remaining > 0) {
         startMetronome();
         S.testModeTimer = setTimeout(() => {
-          if (S.running) stopMetronome();
+          if (S.running) {
+            stopMetronome();
+            S.guidedPhaseEndS = (performance.now() - S.sessionStart) / 1000;  // fix 5
+          }
           S.testModeTimer = null;
         }, remaining);
+      } else {
+        S.guidedPhaseEndS = S.guidedPhaseEndS || CFG.TEST_MODE_GUIDE_S;  // fix 5 fallback
       }
     } else if (S.mode === 'guided') {
       startMetronome();
+    } else if (S.mode === 'thirty-two' && !S.inBreath) {
+      startMetronome();  // fix 2: 30:2 resume restarts metro if not in breath
     }
 
     document.getElementById('pause-overlay').classList.remove('visible');
@@ -1401,8 +1423,8 @@ function computeResults() {
   // Fix 6: hands-off time
   const handsOffSec = Math.round(S.handsOffMs / 1000);
 
-  // Fix 6: compression fraction
-  const activeDurationMs = (CFG.SESSION_DURATION_S * 1000) - S.totalPauseMs;
+  // fix 4: denominator = elapsed active time, not full session minus pauses
+  const activeDurationMs = (CFG.SESSION_DURATION_S - S.timeLeft) * 1000;
   const compressingMs = total * meanInterval;
   const fraction = activeDurationMs > 0
     ? Math.round(Math.min(100, (compressingMs / activeDurationMs) * 100))
@@ -1484,11 +1506,12 @@ function drawBpmChart(history) {
   const ctx     = canvas.getContext('2d');
   // Impr 15: scale by devicePixelRatio for sharp rendering
   const dpr  = window.devicePixelRatio || 1;
-  const cssW = canvas.offsetWidth || 560;
+  // fix 6: size from parent so canvas tracks layout width correctly
+  const cssW = (canvas.parentElement ? canvas.parentElement.clientWidth : 0) || canvas.offsetWidth || 560;
   const cssH = 140;
   canvas.width  = cssW * dpr;
   canvas.height = cssH * dpr;
-  canvas.style.width  = cssW + 'px';
+  canvas.style.width  = '100%';  // fix 6: keep fluid, no fixed px
   canvas.style.height = cssH + 'px';
   ctx.scale(dpr, dpr);
   const W = cssW, H = cssH;
@@ -1499,7 +1522,8 @@ function drawBpmChart(history) {
   const borderColor = style.getPropertyValue('--border').trim()    || '#dee2e6';
   const textColor   = style.getPropertyValue('--muted').trim()     || '#6c757d';
   const lineColor   = style.getPropertyValue('--accent').trim()    || '#c0392b';
-  const safeColor   = '#eafaf1';
+  // fix 6: read safe-zone fill from CSS variable (dark mode aware)
+  const safeColor   = style.getPropertyValue('--chart-safe-fill').trim() || '#eafaf1';
   const safeBorder  = style.getPropertyValue('--safe').trim()      || '#1a6e35';
 
   ctx.fillStyle = bgColor;
